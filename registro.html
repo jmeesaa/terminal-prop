@@ -384,11 +384,47 @@
     .acc-n.big{font-size:32px}
     .tile-v{font-size:26px}
   }
+  /* ---------- entrada (login) ---------- */
+  .auth{position:relative;z-index:1;max-width:420px;margin:8vh auto 0}
+  .auth .brand{margin-bottom:6px}
+  .auth-card{margin-top:26px;background:var(--bg2);border:1px solid var(--line2);border-radius:16px;padding:22px}
+  .auth-tabs{display:flex;gap:6px;margin-bottom:18px}
+  .auth-tabs button{flex:1;font-family:var(--disp);font-weight:600;font-size:13.5px;padding:9px;border-radius:9px;cursor:pointer;border:1px solid var(--line2);background:var(--panel);color:var(--mut)}
+  .auth-tabs button.on{background:var(--panel3);color:var(--ink);border-color:var(--firm)}
+  .auth-card label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin:14px 0 6px}
+  .auth-msg{min-height:20px;margin-top:14px;font-size:13px;color:var(--bad)}
+  .auth-msg.ok{color:var(--good)}
+  .auth-note{margin-top:16px;font-size:12px;color:var(--mut)}
+  .who{font-family:var(--mono);font-size:11px;color:var(--mut);align-self:center;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="auth" id="authBox">
+  <div class="brand"><span class="wt">Terminal</span> <span class="or">Prop</span></div>
+  <div class="kicker"><i></i>Registro · acceso privado</div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button type="button" class="on" id="tabEntrar">Entrar</button>
+      <button type="button" id="tabCrear">Crear cuenta</button>
+    </div>
+    <form id="authForm" novalidate>
+      <label for="aMail">Correo</label>
+      <input class="inp" id="aMail" type="email" autocomplete="email" inputmode="email">
+      <label for="aPass">Contraseña</label>
+      <input class="inp" id="aPass" type="password" autocomplete="current-password">
+      <div id="aCodeRow" hidden>
+        <label for="aCode">Código de invitación</label>
+        <input class="inp" id="aCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false">
+      </div>
+      <div class="auth-msg" id="authMsg" role="alert"></div>
+      <button class="btn primary wide" id="aGo" type="submit">Entrar</button>
+    </form>
+    <p class="auth-note" id="authNote">Tus datos son solo tuyos: nadie más de la lista los ve. Si olvidas la contraseña, pídesela a quien te dio el código.</p>
+  </div>
+</div>
+
+<div class="wrap" id="app" hidden>
 
   <header class="top">
     <div class="brand-row">
@@ -410,6 +446,8 @@
       </nav>
       <div class="top-actions">
         <span class="sync" id="sync"><i></i><span id="syncTxt">Conectando…</span></span>
+        <span class="who" id="who"></span>
+        <button class="btn sm" id="btnSalir" type="button">Salir</button>
         <button class="btn sm" data-act="data">Datos y copias</button>
         <button class="btn sm primary" data-act="new">+ Comprar cuentas</button>
       </div>
@@ -417,7 +455,7 @@
   </header>
 
   <div class="banner" id="demoBanner" hidden>
-    <span><b>Datos de ejemplo.</b> 28 cuentas inventadas, solo en este aparato: no tocan los datos compartidos.</span>
+    <span><b>Datos de ejemplo.</b> 28 cuentas inventadas, solo en este aparato: no tocan los datos de tu cuenta.</span>
     <button class="btn sm" data-act="cleardemo">Volver a los datos reales</button>
   </div>
 
@@ -593,7 +631,7 @@
     </section>
   </main>
 
-  <footer>Terminal Prop · los datos se comparten con quien tenga el enlace · no es asesoramiento financiero</footer>
+  <footer>Terminal Prop · tus datos son solo tuyos · no es asesoramiento financiero</footer>
 </div>
 
 <!-- cajón de cuenta -->
@@ -635,7 +673,7 @@
     <button class="dl-item" data-act="export"><b>Descargar copia</b><small>Un archivo con todo, por si acaso.</small></button>
     <label class="dl-item" for="impFile"><b>Cargar una copia</b><small>Sustituye lo que hay por la copia, para todos los que usan el enlace.</small></label>
     <button class="dl-item" data-act="csv"><b>Exportar a Excel</b><small>Todos los movimientos en una tabla (.csv).</small></button>
-    <button class="dl-item" data-act="demo"><b>Ver con datos de ejemplo</b><small>28 cuentas inventadas, solo en este aparato. No tocan los datos compartidos.</small></button>
+    <button class="dl-item" data-act="demo"><b>Ver con datos de ejemplo</b><small>28 cuentas inventadas, solo en este aparato. No tocan los datos de tu cuenta.</small></button>
     <button class="dl-item danger" data-act="wipe"><b>Borrar todo</b><small>Borra todas las cuentas para todos los que usan el enlace.</small></button>
   </div>
   <input type="file" id="impFile" class="vh" accept=".json,application/json">
@@ -643,10 +681,11 @@
 
 <div class="toast" id="toast" role="status"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 (function(){
   "use strict";
-  var KEY='tp_cobertura_v1';
+  var KEYBASE='tp_cobertura_v2_',KEY=KEYBASE+'anon'; // la copia local es de cada usuario: KEYBASE + su id
   var $=function(id){return document.getElementById(id)};
   var MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   var ST={eval:'En examen',funded:'Fondeada',lost_eval:'Quemada en examen',lost_funded:'Quemada fondeada',closed:'Cerrada'};
@@ -675,7 +714,7 @@
     }catch(e){}
     return blank();
   }
-  var S=load();
+  var S=blank(); // se carga de verdad al entrar (entrar())
   function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
   var chg=0;
   function save(){
@@ -686,10 +725,14 @@
   }
   function touch(a){a.mt=Date.now();}
 
-  /* ================= sincronización (Worker + D1 en Cloudflare) =================
-     Un único documento compartido. Cada guardado lleva la revisión que conocíamos; si alguien
-     guardó antes, el servidor responde 409 con lo último, se juntan los cambios y se vuelve a guardar. */
-  var API='https://terminal-prop-datos.kairoia.workers.dev/registro';
+  /* ================= sincronización (Supabase) =================
+     Un documento por usuario (tabla registros, con acceso solo a lo suyo). Cada guardado lleva la
+     revisión que conocíamos; si otro aparato del mismo usuario guardó antes, no se actualiza ninguna fila,
+     se trae lo último, se juntan los cambios y se vuelve a guardar. */
+  var SB_URL='https://ywphwooscztloyxznkuc.supabase.co';
+  var SB_KEY='sb_publishable_edUij7Uk_p7V7lOn_j9ThA_BZRKc1wo'; // clave pública (publishable): va en la web por diseño; la protección es RLS
+  var sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  var USER=null;
   var pushT=null,pushing=false,retries=0;
   function setSync(st,txt){var el=$('sync');if(!el)return;el.className='sync '+st;$('syncTxt').textContent=txt;}
   function shared(){return {v:1,seq:S.seq||0,accounts:S.accounts,deleted:S.deleted||{},lastFirm:S.lastFirm,lastSize:S.lastSize,lastCost:S.lastCost};}
@@ -724,21 +767,30 @@
     return {v:1,seq:seq,accounts:out,deleted:del,lastFirm:loc.lastFirm||srv.lastFirm,lastSize:loc.lastSize||srv.lastSize,lastCost:loc.lastCost!=null?loc.lastCost:srv.lastCost};
   }
   function schedulePush(){clearTimeout(pushT);setSync('busy','Guardando…');pushT=setTimeout(push,600);}
+  function leerServidor(){
+    return sb.from('registros').select('rev,data').eq('user_id',USER.id).maybeSingle()
+      .then(function(r){if(r.error)throw r.error;return r.data||{rev:0,data:null};});
+  }
   function push(){
-    if(S.demo||!S.dirty||pushing)return;
+    if(!USER||S.demo||!S.dirty||pushing)return;
     pushing=true;
-    var sent=chg;
-    fetch(API,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({rev:S.rev||0,data:shared()})})
-      .then(function(res){return res.json().then(function(j){return {res:res,j:j};});})
-      .then(function(x){
-        pushing=false;
-        if(x.res.status===409&&retries<5){
+    var sent=chg,rev=S.rev||0,data=shared(),req;
+    if(rev===0) req=sb.from('registros').insert({rev:1,data:data}).select('rev');
+    else req=sb.from('registros').update({rev:rev+1,data:data,updated_at:new Date().toISOString()})
+      .eq('user_id',USER.id).eq('rev',rev).select('rev');
+    req.then(function(r){
+        var choque=(r.error&&r.error.code==='23505')||(!r.error&&(!r.data||!r.data.length));
+        if(choque&&retries<5){
           retries++;
-          var m=merge(x.j.data,S);adopt(m,x.j.rev);S.dirty=true;persist();renderAll(true);
-          return push();
+          return leerServidor().then(function(j){
+            pushing=false;
+            var m=merge(j.data,S);adopt(m,j.rev);S.dirty=true;persist();renderAll(true);
+            return push();
+          });
         }
-        if(!x.res.ok)throw new Error(x.j.error||x.res.status);
-        retries=0;S.rev=x.j.rev;
+        if(r.error)throw r.error;
+        pushing=false;
+        retries=0;S.rev=r.data[0].rev;
         if(chg===sent)S.dirty=false;
         persist();
         if(S.dirty)schedulePush();else setSync('ok','Guardado');
@@ -746,9 +798,8 @@
       .catch(function(){pushing=false;setSync('off','Sin conexión · se guardará');});
   }
   function pull(){
-    if(S.demo||pushing)return;
-    fetch(API,{cache:'no-store'})
-      .then(function(res){if(!res.ok)throw new Error(res.status);return res.json();})
+    if(!USER||S.demo||pushing)return;
+    leerServidor()
       .then(function(j){
         if(S.demo||pushing)return;
         if(S.dirty){
@@ -1505,10 +1556,80 @@
   document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')pull();});
   setInterval(function(){if(document.visibilityState==='visible'){if(S.dirty)push();else pull();}},15000);
 
-  F=freshForm(null);
-  setView(view);
-  renderAll();
-  if(!S.demo){setSync('busy','Conectando…');pull();}
+  /* ================= acceso (login) ================= */
+  var modo='entrar';
+  function authMsg(t,ok){var el=$('authMsg');el.textContent=t||'';el.classList.toggle('ok',!!ok);}
+  function setModo(m){
+    modo=m;
+    $('tabEntrar').classList.toggle('on',m==='entrar');
+    $('tabCrear').classList.toggle('on',m==='crear');
+    $('aCodeRow').hidden=m!=='crear';
+    $('aGo').textContent=m==='crear'?'Crear cuenta':'Entrar';
+    $('aPass').autocomplete=m==='crear'?'new-password':'current-password';
+    authMsg('');
+  }
+  function traducir(e){
+    var t=((e&&e.message)||'').toLowerCase();
+    if(t.indexOf('invalid login')>-1)return 'Correo o contraseña incorrectos.';
+    if(t.indexOf('already')>-1)return 'Ese correo ya tiene cuenta. Usa «Entrar».';
+    if(t.indexOf('máximo')>-1)return 'Ya se ha llegado al máximo de cuentas. Habla con quien te dio el código.';
+    if(t.indexOf('código')>-1)return 'El código de invitación no es correcto.';
+    if(t.indexOf('database error')>-1)return 'No se ha podido crear la cuenta: revisa el código de invitación (o ya se ha llegado al máximo de cuentas).';
+    if(t.indexOf('password')>-1)return 'La contraseña no es válida (mínimo 8 caracteres).';
+    if(t.indexOf('valid email')>-1||t.indexOf('invalid email')>-1)return 'Ese correo no parece válido.';
+    if(t.indexOf('rate')>-1)return 'Demasiados intentos seguidos. Espera un momento y prueba otra vez.';
+    if(t.indexOf('fetch')>-1||t.indexOf('network')>-1)return 'Sin conexión. Prueba de nuevo.';
+    return 'No se ha podido: '+((e&&e.message)||'error desconocido');
+  }
+  function entrar(user){
+    USER=user;KEY=KEYBASE+user.id;S=load();
+    try{var sv=localStorage.getItem(KEY+'_vista');if(sv&&$('v-'+sv))view=sv;}catch(e){}
+    $('authBox').hidden=true;$('app').hidden=false;
+    $('who').textContent=user.email||'';
+    F=freshForm(null);
+    setView(view);
+    renderAll();
+    if(!S.demo){setSync('busy','Conectando…');pull();}
+  }
+  function mostrarLogin(){
+    USER=null;
+    $('app').hidden=true;$('authBox').hidden=false;
+    $('aPass').value='';
+  }
+  $('tabEntrar').addEventListener('click',function(){setModo('entrar');});
+  $('tabCrear').addEventListener('click',function(){setModo('crear');});
+  $('authForm').addEventListener('submit',function(ev){
+    ev.preventDefault();
+    var mail=$('aMail').value.trim(),pass=$('aPass').value,code=$('aCode').value.trim();
+    if(!mail||!pass){authMsg('Escribe tu correo y tu contraseña.');return;}
+    if(modo==='crear'){
+      if(pass.length<8){authMsg('La contraseña necesita al menos 8 caracteres.');return;}
+      if(!code){authMsg('Escribe el código de invitación.');return;}
+    }
+    $('aGo').disabled=true;authMsg('');
+    var p=modo==='crear'
+      ?sb.auth.signUp({email:mail,password:pass,options:{data:{codigo:code}}})
+      :sb.auth.signInWithPassword({email:mail,password:pass});
+    p.then(function(r){
+      $('aGo').disabled=false;
+      if(r.error){authMsg(traducir(r.error));return;}
+      if(r.data&&r.data.session)entrar(r.data.user);
+      else authMsg('Cuenta creada, pero no ha iniciado sesión. Pulsa «Entrar».',true);
+    }).catch(function(e){$('aGo').disabled=false;authMsg(traducir(e));});
+  });
+  $('btnSalir').addEventListener('click',function(){
+    if(S.dirty&&!confirm('Hay cambios sin subir (¿sin conexión?). Si sales ahora se pueden perder en este aparato. ¿Salir igualmente?'))return;
+    sb.auth.signOut().then(function(){
+      // en un aparato compartido no se deja la copia de los datos; al volver a entrar se traen de nuevo
+      try{localStorage.removeItem(KEY);localStorage.removeItem(KEY+'_vista');}catch(e){}
+      location.reload();
+    });
+  });
+  sb.auth.onAuthStateChange(function(ev){if(ev==='SIGNED_OUT'&&USER)location.reload();});
+  sb.auth.getSession().then(function(r){
+    var s=r&&r.data&&r.data.session;
+    if(s)entrar(s.user);else mostrarLogin();
+  }).catch(mostrarLogin);
 })();
 </script>
 </body>
